@@ -23,6 +23,8 @@ sensors_event_t a, g, temp;
 const char *ssid = "HOA SEN";
 const char *password = "55599888";
 
+int soLanNgungThoLienTuc = 0;
+
 void TaskDataTranfer(void *pvParameters);
 void TaskPrintProccesserInfo(void *pvParameters);
 
@@ -82,12 +84,12 @@ void setup() {
     ,
     ARDUINO_RUNNING_CORE);
 
-  xTaskCreatePinnedToCore(
-    TaskPrintProccesserInfo, "Task read and internet", 3 * 1024, NULL, 1  // Priority
-    ,
-    NULL  // With task handle we will be able to manipulate with this task.
-    ,
-    ARDUINO_RUNNING_CORE);
+  // xTaskCreatePinnedToCore(
+  //   TaskPrintProccesserInfo, "Task read and internet", 3 * 1024, NULL, 1  // Priority
+  //   ,
+  //   NULL  // With task handle we will be able to manipulate with this task.
+  //   ,
+  //   ARDUINO_RUNNING_CORE);
   /*
   |
   */
@@ -124,10 +126,8 @@ void loop() {
     Serial.print("\tPREDICT VALUE: ");
     Serial.println(predict);
 
-    if (predict < 0.5) {
-      // nếu dự đoán là thở bình thường thì lấy dao động trên trục AZ để tính nhịp thở
-      getAzData();
-    }
+  //Lấy data trục AZ để tính nhịp thở trong luồng tính nhịp thở
+    getAzData();
 
     isSend = true;
     predictValue = predict;
@@ -137,10 +137,19 @@ void loop() {
 void TaskDataTranfer(void *pvParameters) {
   for (;;) {
     ws.cleanupClients();
+    /*
+    * - Nếu detect >= 0.5 thì là đang ngưng thở => số lần ngưng thở (số giây ngưng thở ) + 1
+    * - Nếu detect < 0.5 là không ngưng thở thì reset lại số lần ngưng thở về 0
+    */
     if (isSend) {
-
       float breathInMinutes = 0;
       if (predictValue < 0.5) {
+        soLanNgungThoLienTuc = 0;
+      }
+      else{
+        soLanNgungThoLienTuc += 1;
+      }
+      if(soLanNgungThoLienTuc < 10){
         float azMean = arrMean(AZ_DATA, 200);
         for (size_t i = 0; i < 200; i++) {
           AZ_DATA[i] = AZ_DATA[i] - azMean;
