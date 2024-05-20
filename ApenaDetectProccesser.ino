@@ -20,8 +20,8 @@ bool isSend = false;
 
 sensors_event_t a, g, temp;
 
-const char *ssid = "HOA SEN";
-const char *password = "55599888";
+const char *ssid = "VIVA_PHONGLANH2.4";
+const char *password = "68686868";
 
 int soLanNgungThoLienTuc = 0;
 
@@ -99,6 +99,9 @@ void setup() {
 }
 
 void loop() {
+  /*
+  * - Cứ sau 25ms thì lấy 1 điểm dữ liệu
+  */
   if (millis() < nextTime) {
     return;
   }
@@ -106,17 +109,21 @@ void loop() {
     nextTime = millis();
   }
   nextTime += step;
+
+
   mpu.getEvent(&a, &g, &temp);
   addData(a.acceleration.x, a.acceleration.y, a.acceleration.z, g.gyro.x, g.gyro.y, g.gyro.z);
 
+  // Khi data trong mảng đạt đủ 1200 điểm (Khi bắt đầu chạy sau 5s hoặc 1s sau khi detect)
   if (currPos == 1200) {
+    // Tính toán min max std mean từ các điểm dữ liệu (1200 điểm) gần đây nhất và lưu vào DATA_FEATURES
     caculateFeature();
-
     model_input->data.f[0] = DATA_FEATURES[0];
     model_input->data.f[1] = DATA_FEATURES[1];
     model_input->data.f[2] = DATA_FEATURES[2];
     model_input->data.f[3] = DATA_FEATURES[3];
 
+    // Detect
     TfLiteStatus invoke_status = interpreter->Invoke();
     if (invoke_status != kTfLiteOk) {
       error_reporter->Report("Invoke failed on input: %f\n");
@@ -128,7 +135,7 @@ void loop() {
 
   //Lấy data trục AZ để tính nhịp thở trong luồng tính nhịp thở
     getAzData();
-
+    //Bật điều khiển thông báo gửi data đến mobile app
     isSend = true;
     predictValue = predict;
   }
@@ -160,6 +167,7 @@ void TaskDataTranfer(void *pvParameters) {
       String content = "{\"nhipTho\": " + String(breathInMinutes) + "}";
 
       ws.textAll(content);
+      
       isSend = false;
     }
   }

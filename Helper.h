@@ -89,6 +89,7 @@ void addData(float ax, float ay, float az, float gx, float gy, float gz){
   INPUT_DATA[currPos++] = gz;
 }
 
+//Tính toán các features từ INPUT_DATA (Là 1200 điểm dữ liệu)
 void caculateFeature(){
   DATA_FEATURES[0] = arrMin(INPUT_DATA, DATA_NUM);
   DATA_FEATURES[1] = arrMax(INPUT_DATA, DATA_NUM);
@@ -96,6 +97,7 @@ void caculateFeature(){
   DATA_FEATURES[3] = arrStd(INPUT_DATA, DATA_NUM);
 }
 
+//Lấy data của trục AZ trong INPUT_DATA (ax, ay, |az|, gx, gy, gz, ax, ay, |az|) (0,1,|2|,3,4,5,6,7,|8|)
 void getAzData(){
   int j = 2;
   for(size_t i = 0; i < 200; i++){
